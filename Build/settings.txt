@@ -1,0 +1,3 @@
+Download Folder: f:\Downloads\
+twinBasic Folder: d:\twinBASIC\
+Action: 0
