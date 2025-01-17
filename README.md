@@ -1,0 +1,2 @@
+# GettbZip
+Simple twinBasic "installer"
