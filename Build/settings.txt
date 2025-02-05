@@ -1,5 +1,5 @@
 Download Folder: f:\downloads\
-twinBasic Folder: d:\twinBasic\
-Action: 1
+twinBASIC Folder: d:\twinBasic\
+Action: 3
 Check for new version on load: 1
-Start twinBASIC after update: 0
+Start twinBASIC after update: 1
