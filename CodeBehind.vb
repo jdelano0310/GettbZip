@@ -411,6 +411,12 @@ Class Form1
         If chkLookForUpdateOnLaunch.Value Then
             GetLatestInfoFromReleasesPage True
         End If
+                                            
+        If currentInstalledTBVersion = 0 Then
+            ' the current version is missing, the ide\build.js file contains the version information.
+            Me.Show()
+            btnDownLoadZip.Enabled = (MsgBox("Unable to get your current version, would you like to download the release available anyway?", vbYesNo, "ide\build.js file missing") = vbYes)
+        End If
     End Sub
     
     Private Sub btnSelectDLfolder_Click()
