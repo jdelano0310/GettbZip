@@ -101,6 +101,23 @@ Class Form1
         
     End Sub
     
+    Private Function GettBParentFolder() As String
+        
+        Dim idx As Integer
+        Dim slashCount As Integer
+        
+        ' loop backwards until the second \ is found - which will indicate where
+        ' the parent folder for twinBASIC is
+        For idx = Len(txttBLocation.Text) To 1 Step -1
+            If Mid(txttBLocation.Text, idx, 1) = "\" Then slashCount += 1
+            If slashCount = 2 Then Exit For
+        Next
+        
+        ' truncate the value in the textbox holding the install folder, to get the parent folder
+        GettBParentFolder = Left(txttBLocation.Text, idx)
+        
+    End Function
+    
     Private Sub InstallTwinBasic(zipLocation As String)
         
         ' go through the steps of deleting the current files and unziping the new files
@@ -122,7 +139,19 @@ Class Form1
             .Extract txttBLocation.Text
         End With
         
-        MsgBox("twinBasic from " & zipLocation & " has been extracted and is ready to use.", vbInformation, "Completed")
+        ' check to make sure the twinBASIC folder exists after attempted installation
+        If fso.FolderExists(zipLocation) Then
+            MsgBox("twinBasic from " & zipLocation & " has been extracted and is ready to use.", vbInformation, "Completed")
+        Else
+            MsgBox("There was a problem recreating " & txttBLocation.Text & ". The parent folder and the zip file will be opened so that you can finish the process.", vbCritical, "Unable to complete")
+            
+            ShellExecute(0, "open", zipLocation, vbNullString, vbNullString, 1) ' open the zipfile for the user
+            ShellExecute(0, "open", GettBParentFolder, vbNullString, vbNullString, 1) ' open the folder where twinBASIC is supposed to be installed.
+            
+            MsgBox("Going forward, you can open this utility as administrator to avoid this extra step.")
+            
+        End If
+        
     End Sub
     
     Private Sub ProcessDownloadedZip(zipLocation As String)
@@ -211,10 +240,14 @@ Class Form1
                     invalidFolderMessage += vbCrLf & "doesn't exist!"
                 End If
                 
-                ShowStatusMessage "Invalid settings found"
+                ShowStatusMessage "Invalid settings found - process stopped"
+                
+                ' clear the folder information so that the user knows to fix it
+                txttBLocation.Text = ""
+                txtDownloadTo.Text = ""
                 
                 btnDownLoadZip.Enabled = False
-                MsgBox(invalidFolderMessage, vbCritical, "Invalid Folder Settings")
+                MsgBox(invalidFolderMessage & " on this PC", vbCritical, "Invalid Folder Settings")
                 
             Else
                 chkSaveSettings.Value = vbChecked
@@ -395,7 +428,7 @@ Class Form1
     
     Private Sub Form_Load()
         
-        Me.Caption = "twinBASIC Installer" ' doing this here as setting it in the forms properties cause the proj to not launch
+        Me.Caption = "twinBASIC Installer (v0.5)" ' doing this here as setting it in the forms properties cause the proj to not launch
         
         ' create the file system object that will be used during different code blocks
         Set fso = New FileSystemObject
@@ -404,18 +437,22 @@ Class Form1
         
         ' load any settings that have been saved.
         CheckForSettingsFile
+
+        ' this contiues to check for version info if the folders have been setup
+        If Len(txtDownloadTo.Text) > 0 Then
         
-        ' get the current version of twinBasic
-        GetCurrentTBVersion
-        
-        If chkLookForUpdateOnLaunch.Value Then
-            GetLatestInfoFromReleasesPage True
-        End If
-                                            
-        If currentInstalledTBVersion = 0 Then
-            ' the current version is missing, the ide\build.js file contains the version information.
-            Me.Show()
-            btnDownLoadZip.Enabled = (MsgBox("Unable to get your current version, would you like to download the release available anyway?", vbYesNo, "ide\build.js file missing") = vbYes)
+            ' get the current version of twinBasic
+            GetCurrentTBVersion
+            
+            If chkLookForUpdateOnLaunch.Value Then
+                GetLatestInfoFromReleasesPage True
+            End If
+            
+            If currentInstalledTBVersion = 0 Then
+                ' the current version is missing, the build.js file that contains the version information.
+                Me.Show()
+                btnDownLoadZip.Enabled = (MsgBox("Unable to get your current version, would you like to download the release available anyway?", vbYesNo, "ide\build.js file missing") = vbYes)
+            End If
         End If
     End Sub
     
