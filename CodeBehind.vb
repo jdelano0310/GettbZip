@@ -140,7 +140,7 @@ Class Form1
         End With
         
         ' check to make sure the twinBASIC folder exists after attempted installation
-        If fso.FolderExists(zipLocation) Then
+        If fso.FolderExists(txttBLocation.Text) Then
             MsgBox("twinBasic from " & zipLocation & " has been extracted and is ready to use.", vbInformation, "Completed")
         Else
             MsgBox("There was a problem recreating " & txttBLocation.Text & ". The parent folder and the zip file will be opened so that you can finish the process.", vbCritical, "Unable to complete")
