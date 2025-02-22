@@ -7,4 +7,6 @@ It allows for simply opening the zip or open the folder the zip was downloaded t
 
 You may select to launch twinBASIC after it is 'installed" as well.
 
-![Screenshot 2025-02-02 062106](https://github.com/user-attachments/assets/991986e8-c051-4d8d-b525-b4583781d20f)
+If there has been multiple versions released since the last update, each change log is loaded in the listview
+![image](https://github.com/user-attachments/assets/c5767767-8dee-4101-aad9-86b6be0bff8e)
+
