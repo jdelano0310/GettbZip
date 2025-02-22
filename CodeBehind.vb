@@ -13,7 +13,14 @@ Class Form1
     
     Sub New()
     End Sub
-    
+
+    ' use a record to hold the change log information
+    Type changeLogRecType
+        tBVersion As String * 4
+        clType As String * 11
+        clText As String * 150
+    End Type
+
     Private Function OptionSelection() As Integer
         
         If optOpenFolder.Value Then
@@ -278,31 +285,52 @@ Class Form1
         
     End Function
     
-    Private Function GetChangeLogUL() As Scripting.Dictionary
 
+    Private Function GetChangeLogUL(versionGAP As Integer) As Variant
         ' retrieve the change log section of the page
         Dim tagList As IHTMLElementCollection
         Set tagList = githubReleasesPage.getElementsByTagName("UL")
 
-        Dim foundTags As New Scripting.Dictionary
+        Dim changeLogRecArray() As changeLogRecType
         
         Dim ulIndex As Integer
         Dim liIndex As Integer
         Dim liElements As IHTMLElementCollection
+        Dim changeLogCount As Integer = 0  ' get the change log for each version between the installed and newest released
+        Dim forVersion As String = latestVersion
+        Dim arrayIndex As Integer
+        Dim newArrayMax As Integer
         
         For ulIndex = 0 To tagList.length - 1
             If tagList(ulIndex).className = "" Then
                 ' the change log UL tag has no class associated with it
                 Set liElements = tagList(ulIndex).getElementsByTagName("LI")  ' find the LI elements in the UL
+                
+                If changeLogCount = 0 Then
+                    ' the first change log read the array will not have any items
+                    newArrayMax = liElements.length
+                Else
+                    newArrayMax = UBound(changeLogRecArray) + liElements.length
+                End If
+                
+                ReDim Preserve changeLogRecArray(newArrayMax) As changeLogRecType
+                
                 For liIndex = 0 To liElements.length - 1
                     ' add the change log list to the dictionary to pass it back
-                    foundTags.Add(liIndex, liElements(liIndex).innerText)
+                    changeLogRecArray(arrayIndex).tBVersion = forVersion
+                    changeLogRecArray(arrayIndex).clType = Trim(Left(liElements(liIndex).innerText, InStr(liElements(liIndex).innerText, ":") - 1))
+                    changeLogRecArray(arrayIndex).clText = Trim(Mid(liElements(liIndex).innerText, InStr(liElements(liIndex).innerText, ":") + 1))
+                    arrayIndex += 1
                 Next
-                Exit For  ' that is all that was needed, no need to finish the loop
+                changeLogCount += 1
+                
+                ' once the count of captured change logs equals the number of versions between the installed and the latest - leave the loop
+                If changeLogCount = versionGAP Then Exit For
+                forVersion = Int(forVersion) - 1 ' as we loop more we go back to older version numbers
             End If
         Next ulIndex
         
-        Set GetChangeLogUL = foundTags
+        GetChangeLogUL = changeLogRecArray
         
     End Function
     
@@ -331,7 +359,7 @@ Class Form1
         End If
         
     End Sub
-    
+                    
     Private Sub GetLatestInfoFromReleasesPage(Optional duringFormLoad As Boolean = False)
         
         ' go to the url https://github.com/twinbasic/twinbasic/releases
@@ -364,6 +392,8 @@ Class Form1
         ' find the latest version number
         ShowStatusMessage "Finding latest version available"
         Dim tagText As String
+        Dim versionGAP As Integer = 0
+        
         tagText = GetTagText("h2", "twinBASIC BETA")
         
         latestVersion = Trim(Right(tagText, 4))
@@ -380,44 +410,51 @@ Class Form1
             ShowStatusMessage "Process stopped"
             latestVersion = ""
             Exit Sub
+        Else
+            ' how many versions have been released since the current version
+            versionGAP = CInt(latestVersion) - currentInstalledTBVersion
         End If
         
         ' get the change log for this version
-        lblNewVersion.Caption = "Version " & latestVersion
-        ShowStatusMessage "Extracting the associated change log"
-        
-        Dim changeLogDictionary As New Scripting.Dictionary = GetChangeLogUL()
+        lblNewVersion.Caption = "Upgrading to version " & latestVersion
+
+        If versionGAP > 1 Then
+            ShowStatusMessage "Extracting change log for multiple versions"
+            lblChangeLogTitle.Caption = "Displaying multiple change logs"
+        Else
+            ShowStatusMessage "Extracting the associated change log"
+        End If
+         
+        Dim changeLogArray() As changeLogRecType = GetChangeLogUL(versionGAP)
         Dim itemColor As Long
+        Dim arrayIndex As Integer
         Dim changeLogItem As String
         
-        lblChangeLogTitle.Caption = "Changelog has " & changeLogDictionary.Count & " items."
-        
-        lvChangeLog.ListItems.Clear()
-        For Each changeLogItem In changeLogDictionary.Items()
-            lvChangeLog.ListItems.Add(, , changeLogItem)
+        If versionGAP = 1 Then lblChangeLogTitle.Caption = "Changelog has " & UBound(changeLogArray) & " items."
             
-            ' add color to the change log line
-            If InStr(changeLogItem, ":") > 0 Then
-                Select Case Left(changeLogItem, InStr(changeLogItem, ":") - 1)
-                    Case "IMPORTANT"
-                        itemColor = vbBlue
-                    Case "KNOWN ISSUE"
-                        itemColor = vbBlack
-                    Case "TIP"
-                        itemColor = RGB(22, 83, 126) ' blueish
-                    Case "WARNING"
-                        itemColor = RGB(153, 0, 0) ' dark red
-                    Case "fixed"
-                        itemColor = RGB(56, 118, 29) ' green
-                    Case "added"
-                        itemColor = RGB(75, 0, 130) ' indigo
-                    Case "updated"
-                        itemColor = RGB(0, 128, 0)  ' green 
+        lvChangeLog.ListItems.Clear()
+        For arrayIndex = 0 To UBound(changeLogArray)
+            changeLogItem = changeLogArray(arrayIndex).tBVersion & " - " & changeLogArray(arrayIndex).clType & ": " & changeLogArray(arrayIndex).clText
+            lvChangeLog.ListItems.Add(, , changeLogItem)
                     
-                End Select
-            Else
-                itemColor = vbBlack
-            End If
+            Select Case Trim(changeLogArray(arrayIndex).clType)
+                Case "IMPORTANT"
+                    itemColor = vbBlue
+                Case "KNOWN ISSUE"
+                    itemColor = vbBlack
+                Case "TIP"
+                    itemColor = RGB(22, 83, 126) ' blueish
+                Case "WARNING"
+                    itemColor = RGB(153, 0, 0)   ' dark red
+                Case "fixed"
+                    itemColor = RGB(56, 118, 29) ' green
+                Case "added"
+                    itemColor = RGB(75, 0, 130)  ' indigo
+                Case "updated"
+                    itemColor = RGB(0, 128, 0)   ' other green 
+                Case Else
+                    itemColor = vbBlack
+            End Select
             
             lvChangeLog.ListItems(lvChangeLog.ListItems.Count).ForeColor = itemColor
         Next
@@ -425,10 +462,10 @@ Class Form1
         Set githubReleasesPage = Nothing
         
     End Sub
-    
+                                    
     Private Sub Form_Load()
         
-        Me.Caption = "twinBASIC Installer (v0.5)" ' doing this here as setting it in the forms properties cause the proj to not launch
+        Me.Caption = "twinBASIC Installer (v0.6)" ' doing this here as setting it in the forms properties cause the proj to not launch
         
         ' create the file system object that will be used during different code blocks
         Set fso = New FileSystemObject
