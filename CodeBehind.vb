@@ -221,7 +221,12 @@ Class Form1
                 settingLine = .ReadLine()
                 settingLine = Trim(Split(settingLine, ":")(1)) ' use the data to the right of the colon
                 chkLookForUpdateOnLaunch.Value = CLng(settingLine)
-                
+
+                ' start twinBASIC after update
+                settingLine = .ReadLine()
+                settingLine = Trim(Split(settingLine, ":")(1)) ' use the data to the right of the colon
+                chkStarttwinBASIC.Value = CLng(settingLine)
+
                 .Close()
             End With
             loadingSettingsFromFile = False
@@ -465,7 +470,7 @@ Class Form1
                                     
     Private Sub Form_Load()
         
-        Me.Caption = "twinBASIC Installer (v0.6)" ' doing this here as setting it in the forms properties cause the proj to not launch
+        Me.Caption = "twinBASIC Installer (v0.6.1)" ' doing this here as setting it in the forms properties cause the proj to not launch
         
         ' create the file system object that will be used during different code blocks
         Set fso = New FileSystemObject
@@ -609,8 +614,6 @@ Class Form1
     
         ' is the form reaf to download the zip file
         EnableDownloadZipButton
-        chkStarttwinBASIC.Value = vbChecked
-        chkStarttwinBASIC.Enabled = True
         
     End Sub
     
