@@ -97,7 +97,8 @@ Class Form1
     End Sub
     
     Private Sub ShowStatusMessage(statMessage As String, Optional updatePreviousStatus As Boolean = False)
-        
+
+        ' write the message to the listbox on the form
         If updatePreviousStatus Then
             lbStatus.List(lbStatus.ListCount - 1) += statMessage
         Else
@@ -254,17 +255,11 @@ Class Form1
                 
                 ShowStatusMessage "Invalid settings found - process stopped"
                 
-                ' clear the folder information so that the user knows to fix it
-                txttBLocation.Text = ""
-                txtDownloadTo.Text = ""
-                
                 btnDownLoadZip.Enabled = False
                 MsgBox(invalidFolderMessage & " on this PC", vbCritical, "Invalid Folder Settings")
                 
-            Else
-                chkSaveSettings.Value = vbChecked
             End If
-            
+            chkSaveSettings.Value = vbChecked
         End If
         
     End Sub
@@ -470,7 +465,7 @@ Class Form1
                                     
     Private Sub Form_Load()
         
-        Me.Caption = "twinBASIC Installer (v0.6.1)" ' doing this here as setting it in the forms properties cause the proj to not launch
+        Me.Caption = "twinBASIC Installer (v0.6.2)" ' doing this here as setting it in the forms properties cause the proj to not launch
         
         ' create the file system object that will be used during different code blocks
         Set fso = New FileSystemObject
@@ -604,7 +599,7 @@ Class Form1
         chkStarttwinBASIC.Value = 0
         chkStarttwinBASIC.Enabled = False
         
-        ' is the form reaf to download the zip file
+        ' is the form ready to download the zip file
         EnableDownloadZipButton
     End Sub
     
@@ -616,5 +611,23 @@ Class Form1
         EnableDownloadZipButton
         
     End Sub
-    
+
+    Private Sub txttBLocation_LostFocus()
+            
+        ' if the folder doesn't exist, create it?
+        If Not fso.FolderExists(txttBLocation.Text) Then
+            ' ask the user if the folder should be created (like a first time setup)
+            If MsgBox("This folder doesn't exist. Should it be created?", vbYesNo, "twinBASIC Location") = vbYes Then
+                On Error Resume Next
+                fso.CreateFolder(txttBLocation.Text)
+                If Not fso.FolderExists(txttBLocation.Text) Then
+                    MsgBox("Unable to create the folder. Try another folder name.", vbCritical, "Creation Error")
+                    txttBLocation.SetFocus()
+                Else
+                    EnableDownloadZipButton
+                End If
+            End If
+        End If
+        
+    End Sub
 End Class
