@@ -1,3 +1,5 @@
+06-17-25: This is has moved to a new project tBHelper https://github.com/jdelano0310/tbHelper
+
 # GettbZip
 Simple twinBasic "installer"
 
